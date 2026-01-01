@@ -13,11 +13,28 @@ const (
 	BaseUrl = "https://api.supadata.ai/v1"
 )
 
+type ErrorIdentifier string
+
+const (
+	InvalidRequest        ErrorIdentifier = "invalid-request"
+	InternalError         ErrorIdentifier = "internal-error"
+	Forbidden             ErrorIdentifier = "forbidden"
+	Unauthorized          ErrorIdentifier = "unauthorized"
+	UpgradeRequired       ErrorIdentifier = "upgrade-required"
+	TranscriptUnavailable ErrorIdentifier = "transcript-unavailable"
+	NotFound              ErrorIdentifier = "not-found"
+	LimitExceeded         ErrorIdentifier = "limit-exceeded"
+)
+
 type ErrorResponse struct {
-	Error            string `json:"error"`
-	Message          string `json:"message"`
-	Details          string `json:"details"`
-	DocumentationUrl string `json:"documentationUrl"`
+	ErrorIdentifier  ErrorIdentifier `json:"error"`
+	Message          string          `json:"message"`
+	Details          string          `json:"details"`
+	DocumentationUrl string          `json:"documentationUrl"`
+}
+
+func (e *ErrorResponse) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorIdentifier, e.Message)
 }
 
 type Transcript struct {
@@ -148,7 +165,7 @@ func (s *Supadata) Transcript(params *TranscriptParams) (*Transcript, error) {
 		if err := json.Unmarshal(body, &errResp); err != nil {
 			return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
 		}
-		return nil, fmt.Errorf("%s: %s", errResp.Error, errResp.Message)
+		return nil, &errResp
 	}
 
 	// Check if response is async (has jobId) or sync (has content)

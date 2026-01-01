@@ -1,0 +1,21 @@
+version: 2
+
+builds:
+  - skip: true
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: petros0
+    name: supadata-go
+  draft: true
+  prerelease: auto
+  name_template: "{{.Tag}}"
