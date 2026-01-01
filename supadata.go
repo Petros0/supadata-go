@@ -90,7 +90,6 @@ func (s *Supadata) setDefaultHeaders(req *http.Request) {
 	req.Header.Set("User-Agent", "supadata-go/1.0.0")
 	req.Header.Set("x-api-key", s.config.APIKey)
 }
-
 func NewSupadata(config *SupadataConfig) *Supadata {
 	defaultClient := &http.Client{
 		Timeout:   60 * time.Second,
