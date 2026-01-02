@@ -1,3 +1,3 @@
 module github.com/petros0/supadata-go
 
-go 1.25
+go 1.23
