@@ -1,4 +1,4 @@
-package main
+package supadata
 
 import (
 	"encoding/json"
