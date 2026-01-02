@@ -46,15 +46,17 @@ func (r *Transcript) IsAsync() bool {
 	return r.Async != nil
 }
 
+type TranscriptContent struct {
+	Text     string  `json:"text"`
+	Offset   float64 `json:"offset"`
+	Duration int     `json:"duration"`
+	Lang     string  `json:"lang"`
+}
+
 type SyncTranscript struct {
-	Content []struct {
-		Text     string `json:"text"`
-		Offset   int    `json:"offset"`
-		Duration int    `json:"duration"`
-		Lang     string `json:"lang"`
-	} `json:"content"`
-	Lang           string   `json:"lang"`
-	AvailableLangs []string `json:"availableLangs"`
+	Content        []TranscriptContent `json:"content"`
+	Lang           string              `json:"lang"`
+	AvailableLangs []string            `json:"availableLangs"`
 }
 
 type AsyncTranscript struct {
@@ -66,7 +68,7 @@ type TranscriptModeParam string
 const (
 	Native   TranscriptModeParam = "native"
 	Auto     TranscriptModeParam = "auto"
-	Generate TranscriptModeParam = "all"
+	Generate TranscriptModeParam = "generate"
 )
 
 type TranscriptParams struct {
@@ -77,9 +79,82 @@ type TranscriptParams struct {
 	Mode      TranscriptModeParam
 }
 
+type TranscriptResultStatus string
+
+const (
+	Queued    TranscriptResultStatus = "queued"
+	Active    TranscriptResultStatus = "active"
+	Completed TranscriptResultStatus = "completed"
+	Failed    TranscriptResultStatus = "failed"
+)
+
+type TranscriptResult struct {
+	Status         TranscriptResultStatus `json:"status"`
+	Error          *ErrorResponse         `json:"error,omitempty"`
+	Content        []TranscriptContent    `json:"content,omitempty"`
+	Lang           string                 `json:"lang,omitempty"`
+	AvailableLangs []string               `json:"availableLangs,omitempty"`
+}
+
+type MetadataPlatform string
+
+const (
+	YouTube   MetadataPlatform = "youtube"
+	TikTok    MetadataPlatform = "tiktok"
+	Instagram MetadataPlatform = "instagram"
+	Twitter   MetadataPlatform = "twitter"
+	Facebook  MetadataPlatform = "facebook"
+)
+
+type MetadataType string
+
+const (
+	Video    MetadataType = "video"
+	Image    MetadataType = "image"
+	Carousel MetadataType = "carousel"
+	Post     MetadataType = "post"
+)
+
+type Metadata struct {
+	Platform    MetadataPlatform `json:"platform"`
+	Type        MetadataType     `json:"type"`
+	Id          string           `json:"id"`
+	Url         string           `json:"url"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Author      struct {
+		DisplayName string `json:"displayName"`
+		Username    string `json:"username"`
+		AvatarUrl   string `json:"avatarUrl"`
+		Verified    bool   `json:"verified"`
+	} `json:"author"`
+	Stats struct {
+		Likes    *int `json:"likes"`
+		Comments *int `json:"comments"`
+		Shares   *int `json:"shares"`
+		Views    *int `json:"views"`
+	} `json:"stats"`
+	Media struct {
+		Type         string  `json:"type"`
+		Duration     float64 `json:"duration,omitempty"`
+		ThumbnailUrl string  `json:"thumbnailUrl,omitempty"`
+		Url          string  `json:"url,omitempty"`
+		Items        []struct {
+			Type         string  `json:"type"`
+			Duration     float64 `json:"duration,omitempty"`
+			ThumbnailUrl string  `json:"thumbnailUrl,omitempty"`
+			Url          string  `json:"url,omitempty"`
+		} `json:"items,omitempty"`
+	} `json:"media"`
+	Tags           []string               `json:"tags,omitempty"`
+	CreatedAt      time.Time              `json:"createdAt"`
+	AdditionalData map[string]interface{} `json:"additionalData,omitempty"`
+}
+
 type SupadataConfig struct {
-	APIKey string
-	Client *http.Client
+	apiKey  string
+	client  *http.Client
+	timeout time.Duration
 }
 
 type Supadata struct {
@@ -88,30 +163,48 @@ type Supadata struct {
 
 func (s *Supadata) setDefaultHeaders(req *http.Request) {
 	req.Header.Set("User-Agent", "supadata-go/1.0.0")
-	req.Header.Set("x-api-key", s.config.APIKey)
+	req.Header.Set("x-api-key", s.config.apiKey)
 }
-func NewSupadata(config *SupadataConfig) *Supadata {
+
+type SupadataOption func(*SupadataConfig)
+
+func WithAPIKey(apiKey string) SupadataOption {
+	return func(config *SupadataConfig) {
+		config.apiKey = apiKey
+	}
+}
+
+func WithTimeout(timeout time.Duration) SupadataOption {
+	return func(config *SupadataConfig) {
+		config.client.Timeout = timeout
+	}
+}
+
+func WithClient(client *http.Client) SupadataOption {
+	return func(config *SupadataConfig) {
+		config.client = client
+	}
+}
+
+func NewSupadata(opts ...SupadataOption) *Supadata {
 	defaultClient := &http.Client{
 		Timeout:   60 * time.Second,
 		Transport: http.DefaultTransport,
 	}
 
-	apiKey := os.Getenv("SUPADATA_API_KEY")
-
-	if config == nil && apiKey != "" {
-		config = &SupadataConfig{
-			APIKey: apiKey,
-			Client: defaultClient,
-		}
-
+	c := &SupadataConfig{
+		apiKey: os.Getenv("SUPADATA_API_KEY"),
+		client: defaultClient,
 	}
 
-	if config != nil && config.Client == nil {
-		config.Client = defaultClient
+	for _, opt := range opts {
+		opt(c)
 	}
+
 	return &Supadata{
-		config: config,
+		config: c,
 	}
+
 }
 
 func (s *Supadata) prepareRequest(method, endpoint string, body io.Reader) (*http.Request, error) {
@@ -121,6 +214,37 @@ func (s *Supadata) prepareRequest(method, endpoint string, body io.Reader) (*htt
 	}
 	s.setDefaultHeaders(req)
 	return req, nil
+}
+
+// handleResponse is a generic function that handles HTTP responses and unmarshals them into the specified type
+func handleResponse[T any](resp *http.Response) (*T, error) {
+	body, err := handleRawResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var result T
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// handleRawResponse handles HTTP responses and returns the raw body bytes for custom processing
+func handleRawResponse(resp *http.Response) ([]byte, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
+		}
+		return nil, &errResp
+	}
+	return body, nil
 }
 
 // Universal Endpoints
@@ -148,24 +272,16 @@ func (s *Supadata) Transcript(params *TranscriptParams) (*Transcript, error) {
 	}
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := s.config.Client.Do(req)
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := handleRawResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode >= 400 {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-		}
-		return nil, &errResp
-	}
 
 	// Check if response is async (has jobId) or sync (has content)
 	var raw map[string]json.RawMessage
@@ -186,4 +302,35 @@ func (s *Supadata) Transcript(params *TranscriptParams) (*Transcript, error) {
 		return nil, err
 	}
 	return &Transcript{Sync: &sync}, nil
+}
+
+func (s *Supadata) TranscriptResult(jobId string) (*TranscriptResult, error) {
+	req, err := s.prepareRequest("GET", "/transcript/"+jobId, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return handleResponse[TranscriptResult](resp)
+}
+
+func (s *Supadata) Metadata(url string) (*Metadata, error) {
+	req, err := s.prepareRequest("GET", "/metadata", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("url", url)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return handleResponse[Metadata](resp)
 }

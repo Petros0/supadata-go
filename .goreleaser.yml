@@ -16,6 +16,6 @@ release:
   github:
     owner: petros0
     name: supadata-go
-  draft: true
+  draft: false
   prerelease: auto
   name_template: "{{.Tag}}"
