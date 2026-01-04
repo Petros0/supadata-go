@@ -1,0 +1,50 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - errcheck       # Check for unchecked errors
+    - govet          # Reports suspicious constructs
+    - staticcheck    # Advanced static analysis
+    - ineffassign    # Detects unused variable assignments
+    - unused         # Checks for unused code
+    - misspell       # Finds misspelled words
+    - gosec          # Security checks
+    - goconst        # Repeated strings that could be constants
+
+  exclusions:
+    paths:
+      - main.go  # Example file, not part of the library
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - (io.Closer).Close
+        - (*net/http.Response.Body).Close
+    misspell:
+      locale: US
+
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/petros0/supadata-go
+
+run:
+  timeout: 5m
+  tests: true
+  go: "1.23"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  formats:
+    text:
+      print-linter-name: true
+      print-issued-lines: true

@@ -99,9 +99,9 @@ client := supadata.NewSupadata() // Will use SUPADATA_API_KEY env var
 2. **Explicit configuration**:
 
 ```go
-client := NewSupadata(
-WithAPIKey("sd_..."),
-WithTimeout(30*time.Second), // just override timeout of the client
+client := supadata.NewSupadata(
+    WithAPIKey("sd_..."),
+    WithTimeout(30*time.Second), // just override timeout of the client
 )
 ```
 
@@ -110,20 +110,15 @@ WithTimeout(30*time.Second), // just override timeout of the client
 You can provide a custom HTTP client for advanced use cases:
 
 ```go
-client := NewSupadata(
-WithClient(
-&http.Client{
-Timeout:   30 * time.Second,
-Transport: http.DefaultTransport,
-},
-),
+client := supadata.NewSupadata(
+	WithAPIKey("sd_..."),
+	WithClient(
+		&http.Client{
+            Timeout:   30 * time.Second,
+            Transport: http.DefaultTransport,
+        },
+    ),
 )
-```
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
 ```
 
 ## License

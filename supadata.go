@@ -146,19 +146,18 @@ type Metadata struct {
 			Url          string  `json:"url,omitempty"`
 		} `json:"items,omitempty"`
 	} `json:"media"`
-	Tags           []string               `json:"tags,omitempty"`
-	CreatedAt      time.Time              `json:"createdAt"`
-	AdditionalData map[string]interface{} `json:"additionalData,omitempty"`
+	Tags           []string       `json:"tags,omitempty"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	AdditionalData map[string]any `json:"additionalData,omitempty"`
 }
 
-type SupadataConfig struct {
-	apiKey  string
-	client  *http.Client
-	timeout time.Duration
+type Config struct {
+	apiKey string
+	client *http.Client
 }
 
 type Supadata struct {
-	config *SupadataConfig
+	config *Config
 }
 
 func (s *Supadata) setDefaultHeaders(req *http.Request) {
@@ -166,33 +165,33 @@ func (s *Supadata) setDefaultHeaders(req *http.Request) {
 	req.Header.Set("x-api-key", s.config.apiKey)
 }
 
-type SupadataOption func(*SupadataConfig)
+type ConfigOption func(*Config)
 
-func WithAPIKey(apiKey string) SupadataOption {
-	return func(config *SupadataConfig) {
+func WithAPIKey(apiKey string) ConfigOption {
+	return func(config *Config) {
 		config.apiKey = apiKey
 	}
 }
 
-func WithTimeout(timeout time.Duration) SupadataOption {
-	return func(config *SupadataConfig) {
+func WithTimeout(timeout time.Duration) ConfigOption {
+	return func(config *Config) {
 		config.client.Timeout = timeout
 	}
 }
 
-func WithClient(client *http.Client) SupadataOption {
-	return func(config *SupadataConfig) {
+func WithClient(client *http.Client) ConfigOption {
+	return func(config *Config) {
 		config.client = client
 	}
 }
 
-func NewSupadata(opts ...SupadataOption) *Supadata {
+func NewSupadata(opts ...ConfigOption) *Supadata {
 	defaultClient := &http.Client{
 		Timeout:   60 * time.Second,
 		Transport: http.DefaultTransport,
 	}
 
-	c := &SupadataConfig{
+	c := &Config{
 		apiKey: os.Getenv("SUPADATA_API_KEY"),
 		client: defaultClient,
 	}
