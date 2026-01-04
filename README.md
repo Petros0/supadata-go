@@ -11,6 +11,8 @@ platforms.
 
 ## Supported Features
 
+OpenAPI specification: https://supadata.ai/api/v1/openapi.json
+
 | Endpoint                                                                                                 | Supported |
 |----------------------------------------------------------------------------------------------------------|-----------|
 | [Universal Transcript](https://docs.supadata.ai/api-reference/endpoint/transcript/transcript)            | ✅         |
@@ -100,8 +102,8 @@ client := supadata.NewSupadata() // Will use SUPADATA_API_KEY env var
 
 ```go
 client := supadata.NewSupadata(
-    WithAPIKey("sd_..."),
-    WithTimeout(30*time.Second), // just override timeout of the client
+WithAPIKey("sd_..."),
+WithTimeout(30*time.Second), // just override timeout of the client
 )
 ```
 
@@ -111,13 +113,13 @@ You can provide a custom HTTP client for advanced use cases:
 
 ```go
 client := supadata.NewSupadata(
-	WithAPIKey("sd_..."),
-	WithClient(
-		&http.Client{
-            Timeout:   30 * time.Second,
-            Transport: http.DefaultTransport,
-        },
-    ),
+WithAPIKey("sd_..."),
+WithClient(
+&http.Client{
+Timeout:   30 * time.Second,
+Transport: http.DefaultTransport,
+},
+),
 )
 ```
 
