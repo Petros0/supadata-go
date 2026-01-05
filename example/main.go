@@ -34,8 +34,9 @@ func main() {
 	}
 
 	// Run examples
-	transcriptExample(client)
-	metadataExample(client)
+	accountInfoExample(client)
+	//transcriptExample(client)
+	//metadataExample(client)
 }
 
 // handleError demonstrates proper error handling for Supadata API errors
@@ -67,6 +68,22 @@ func handleError(err error) {
 		// Handle non-API errors (network issues, etc.)
 		fmt.Printf("Error: %v\n", err)
 	}
+}
+
+// accountInfoExample demonstrates the Me endpoint for account information
+func accountInfoExample(client *supadata.Supadata) {
+	fmt.Println("=== Account Info Example ===")
+
+	info, err := client.Me()
+	if err != nil {
+		handleError(err)
+		return
+	}
+
+	fmt.Printf("Organization ID: %s\n", info.OrganizationId)
+	fmt.Printf("Plan: %s\n", info.Plan)
+	fmt.Printf("Credits: %d / %d used\n", info.UsedCredits, info.MaxCredits)
+	fmt.Println()
 }
 
 // transcriptExample demonstrates the Transcript endpoint

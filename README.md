@@ -35,7 +35,7 @@ OpenAPI specification: https://supadata.ai/api/v1/openapi.json
 | [Web Map](https://docs.supadata.ai/api-reference/endpoint/web/map)                                       | ❌         |
 | [Web Crawl](https://docs.supadata.ai/api-reference/endpoint/web/crawl)                                   | ❌         |
 | [Web Crawl Status](https://docs.supadata.ai/api-reference/endpoint/web/crawl-get)                        | ❌         |
-| [Account Information](https://docs.supadata.ai/api-reference/endpoint/account/me)                        | ❌         |
+| [Account Information](https://docs.supadata.ai/api-reference/endpoint/account/me)                        | ✅         |
 
 ## Installation
 

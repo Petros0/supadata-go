@@ -151,6 +151,14 @@ type Metadata struct {
 	AdditionalData map[string]any `json:"additionalData,omitempty"`
 }
 
+// AccountInfo represents account information from the /me endpoint
+type AccountInfo struct {
+	OrganizationId string `json:"organizationId"`
+	Plan           string `json:"plan"`
+	MaxCredits     int    `json:"maxCredits"`
+	UsedCredits    int    `json:"usedCredits"`
+}
+
 type Config struct {
 	apiKey  string
 	baseURL string
@@ -255,6 +263,8 @@ func handleRawResponse(resp *http.Response) ([]byte, error) {
 }
 
 // Universal Endpoints
+
+// Transcript initiates a transcript request (sync or async)
 func (s *Supadata) Transcript(params *TranscriptParams) (*Transcript, error) {
 	req, err := s.prepareRequest("GET", "/transcript", nil)
 	if err != nil {
@@ -311,6 +321,7 @@ func (s *Supadata) Transcript(params *TranscriptParams) (*Transcript, error) {
 	return &Transcript{Sync: &sync}, nil
 }
 
+// TranscriptResult retrieves the result of an async transcript job
 func (s *Supadata) TranscriptResult(jobId string) (*TranscriptResult, error) {
 	req, err := s.prepareRequest("GET", "/transcript/"+jobId, nil)
 	if err != nil {
@@ -324,6 +335,7 @@ func (s *Supadata) TranscriptResult(jobId string) (*TranscriptResult, error) {
 	return handleResponse[TranscriptResult](resp)
 }
 
+// Metadata retrieves metadata for a given URL
 func (s *Supadata) Metadata(url string) (*Metadata, error) {
 	req, err := s.prepareRequest("GET", "/metadata", nil)
 	if err != nil {
@@ -340,4 +352,22 @@ func (s *Supadata) Metadata(url string) (*Metadata, error) {
 	}
 	defer resp.Body.Close()
 	return handleResponse[Metadata](resp)
+}
+
+// Account Endpoints
+
+// Me retrieves account information
+func (s *Supadata) Me() (*AccountInfo, error) {
+	req, err := s.prepareRequest("GET", "/me", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[AccountInfo](resp)
 }

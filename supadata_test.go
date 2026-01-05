@@ -1036,3 +1036,87 @@ func TestTranscript_AsyncFields(t *testing.T) {
 		t.Errorf("expected jobId %q, got %q", "job-abc-123", transcript.Async.JobId)
 	}
 }
+
+// =============================================================================
+// Me (Account Info) Method Tests
+// =============================================================================
+
+func TestMe_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/me" {
+			t.Errorf("expected path /me, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodGet {
+			t.Errorf("expected method GET, got %s", r.Method)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"organizationId": "550e8400-e29b-41d4-a716-446655440000",
+			"plan":           "Pro",
+			"maxCredits":     100000,
+			"usedCredits":    15000,
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.Me()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.OrganizationId != "550e8400-e29b-41d4-a716-446655440000" {
+		t.Errorf("expected organizationId %q, got %q", "550e8400-e29b-41d4-a716-446655440000", result.OrganizationId)
+	}
+	if result.Plan != "Pro" {
+		t.Errorf("expected plan %q, got %q", "Pro", result.Plan)
+	}
+	if result.MaxCredits != 100000 {
+		t.Errorf("expected maxCredits %d, got %d", 100000, result.MaxCredits)
+	}
+	if result.UsedCredits != 15000 {
+		t.Errorf("expected usedCredits %d, got %d", 15000, result.UsedCredits)
+	}
+}
+
+func TestMe_Unauthorized(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Me()
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != Unauthorized {
+		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
+	}
+}
+
+func TestMe_InternalError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusInternalServerError, InternalError, "Internal server error", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Me()
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != InternalError {
+		t.Errorf("expected error %q, got %q", InternalError, errResp.ErrorIdentifier)
+	}
+}
