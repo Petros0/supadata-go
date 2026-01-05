@@ -15,6 +15,13 @@ linters:
   exclusions:
     paths:
       - main.go  # Example file, not part of the library
+    rules:
+      - linters:
+          - goconst
+        path: _test\.go  # Repeated strings in tests are acceptable
+      - linters:
+          - misspell
+        text: "(?i)cancelled"  # API uses British spelling (case-insensitive)
 
   settings:
     errcheck:

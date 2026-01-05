@@ -34,9 +34,15 @@ func main() {
 	}
 
 	// Run examples
+
+	// Make sure to uncomment the examples you want to run
+	// These are commented out to avoid unnecessary API calls during testing
 	accountInfoExample(client)
 	//transcriptExample(client)
 	//metadataExample(client)
+	scrapeExample(client)
+	//mapExample(client)
+	//crawlExample(client)
 }
 
 // handleError demonstrates proper error handling for Supadata API errors
@@ -216,4 +222,108 @@ func metadataExample(client *supadata.Supadata) {
 	// Created at
 	fmt.Printf("Created: %s\n", metadata.CreatedAt.Format(time.RFC3339))
 	fmt.Println()
+}
+
+// scrapeExample demonstrates the Scrape endpoint
+func scrapeExample(client *supadata.Supadata) {
+	fmt.Println("=== Web Scrape Example ===")
+
+	result, err := client.Scrape(&supadata.ScrapeParams{
+		Url:  "https://docs.supadata.ai",
+		Lang: "en",
+	})
+	if err != nil {
+		handleError(err)
+		return
+	}
+
+	fmt.Printf("URL: %s\n", result.Url)
+	fmt.Printf("Name: %s\n", result.Name)
+	fmt.Printf("Description: %s\n", result.Description)
+	fmt.Printf("Characters: %d\n", result.CountCharacters)
+	fmt.Printf("Links found: %d\n", len(result.Urls))
+
+	// Print first 100 chars of content
+	if len(result.Content) > 100 {
+		fmt.Printf("Content preview: %s...\n", result.Content[:100])
+	} else {
+		fmt.Printf("Content: %s\n", result.Content)
+	}
+	fmt.Println()
+}
+
+// mapExample demonstrates the Map endpoint
+func mapExample(client *supadata.Supadata) {
+	fmt.Println("=== Web Map Example ===")
+
+	result, err := client.Map(&supadata.MapParams{
+		Url: "https://docs.supadata.ai",
+	})
+	if err != nil {
+		handleError(err)
+		return
+	}
+
+	fmt.Printf("Found %d URLs:\n", len(result.Urls))
+	for i, url := range result.Urls {
+		if i >= 10 {
+			fmt.Printf("  ... and %d more\n", len(result.Urls)-10)
+			break
+		}
+		fmt.Printf("  - %s\n", url)
+	}
+	fmt.Println()
+}
+
+// crawlExample demonstrates the Crawl and CrawlResult endpoints
+func crawlExample(client *supadata.Supadata) {
+	fmt.Println("=== Web Crawl Example ===")
+
+	// Start crawl job
+	job, err := client.Crawl(&supadata.CrawlBody{
+		Url:   "https://docs.supadata.ai",
+		Limit: 10,
+	})
+	if err != nil {
+		handleError(err)
+		return
+	}
+
+	fmt.Printf("Crawl job started with ID: %s\n", job.JobId)
+
+	// Poll for results
+	for {
+		result, err := client.CrawlResult(job.JobId, 0)
+		if err != nil {
+			handleError(err)
+			return
+		}
+
+		fmt.Printf("Status: %s\n", result.Status)
+
+		switch result.Status {
+		case supadata.CrawlCompleted:
+			fmt.Printf("Crawl completed! Found %d pages\n", len(result.Pages))
+			for i, page := range result.Pages {
+				if i >= 5 {
+					fmt.Printf("  ... and %d more pages\n", len(result.Pages)-5)
+					break
+				}
+				fmt.Printf("  - %s (%d chars)\n", page.Name, page.CountCharacters)
+			}
+			return
+
+		case supadata.CrawlFailed:
+			fmt.Println("Crawl job failed")
+			return
+
+		case supadata.Cancelled:
+			fmt.Println("Crawl job was cancelled")
+			return
+
+		case supadata.Scraping:
+			fmt.Println("Still crawling, waiting 5 seconds...")
+			time.Sleep(5 * time.Second)
+		}
+	}
 }

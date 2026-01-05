@@ -1120,3 +1120,481 @@ func TestMe_InternalError(t *testing.T) {
 		t.Errorf("expected error %q, got %q", InternalError, errResp.ErrorIdentifier)
 	}
 }
+
+// =============================================================================
+// Scrape Method Tests
+// =============================================================================
+
+func TestScrape_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/web/scrape" {
+			t.Errorf("expected path /web/scrape, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodGet {
+			t.Errorf("expected method GET, got %s", r.Method)
+		}
+		if got := r.URL.Query().Get("url"); got != "https://example.com" {
+			t.Errorf("expected url param, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"url":             "https://example.com",
+			"content":         "# Example\n\nThis is example content.",
+			"name":            "Example Domain",
+			"description":     "Example domain for testing",
+			"ogUrl":           "https://example.com/og.png",
+			"countCharacters": 35,
+			"urls":            []string{"https://example.com/about", "https://example.com/contact"},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.Scrape(&ScrapeParams{Url: "https://example.com"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Url != "https://example.com" {
+		t.Errorf("expected url %q, got %q", "https://example.com", result.Url)
+	}
+	if result.Name != "Example Domain" {
+		t.Errorf("expected name %q, got %q", "Example Domain", result.Name)
+	}
+	if result.CountCharacters != 35 {
+		t.Errorf("expected countCharacters %d, got %d", 35, result.CountCharacters)
+	}
+	if len(result.Urls) != 2 {
+		t.Errorf("expected 2 urls, got %d", len(result.Urls))
+	}
+}
+
+func TestScrape_WithParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if got := q.Get("noLinks"); got != "true" {
+			t.Errorf("expected noLinks=true, got %q", got)
+		}
+		if got := q.Get("lang"); got != "es" {
+			t.Errorf("expected lang=es, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"url":             "https://example.com",
+			"content":         "Content without links",
+			"name":            "Example",
+			"description":     "",
+			"ogUrl":           "",
+			"countCharacters": 21,
+			"urls":            []string{},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Scrape(&ScrapeParams{
+		Url:     "https://example.com",
+		NoLinks: true,
+		Lang:    "es",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestScrape_Unauthorized(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Scrape(&ScrapeParams{Url: "https://example.com"})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != Unauthorized {
+		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
+	}
+}
+
+func TestScrape_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusNotFound, NotFound, "Page not found", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Scrape(&ScrapeParams{Url: "https://example.com/notfound"})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != NotFound {
+		t.Errorf("expected error %q, got %q", NotFound, errResp.ErrorIdentifier)
+	}
+}
+
+// =============================================================================
+// Map Method Tests
+// =============================================================================
+
+func TestMap_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/web/map" {
+			t.Errorf("expected path /web/map, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodGet {
+			t.Errorf("expected method GET, got %s", r.Method)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"urls": []string{
+				"https://example.com",
+				"https://example.com/about",
+				"https://example.com/contact",
+				"https://example.com/blog",
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.Map(&MapParams{Url: "https://example.com"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Urls) != 4 {
+		t.Errorf("expected 4 urls, got %d", len(result.Urls))
+	}
+	if result.Urls[0] != "https://example.com" {
+		t.Errorf("expected first url %q, got %q", "https://example.com", result.Urls[0])
+	}
+}
+
+func TestMap_WithParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if got := q.Get("noLinks"); got != "true" {
+			t.Errorf("expected noLinks=true, got %q", got)
+		}
+		if got := q.Get("lang"); got != "fr" {
+			t.Errorf("expected lang=fr, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"urls": []string{"https://example.com"},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Map(&MapParams{
+		Url:     "https://example.com",
+		NoLinks: true,
+		Lang:    "fr",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestMap_Unauthorized(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Map(&MapParams{Url: "https://example.com"})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != Unauthorized {
+		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
+	}
+}
+
+// =============================================================================
+// Crawl Method Tests
+// =============================================================================
+
+func TestCrawl_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/web/crawl" {
+			t.Errorf("expected path /web/crawl, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("expected method POST, got %s", r.Method)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+
+		// Verify request body
+		var body CrawlBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("failed to decode request body: %v", err)
+		}
+		if body.Url != "https://example.com" {
+			t.Errorf("expected url %q, got %q", "https://example.com", body.Url)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"jobId": "crawl-job-123",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.Crawl(&CrawlBody{Url: "https://example.com"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.JobId != "crawl-job-123" {
+		t.Errorf("expected jobId %q, got %q", "crawl-job-123", result.JobId)
+	}
+}
+
+func TestCrawl_WithLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body CrawlBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("failed to decode request body: %v", err)
+		}
+		if body.Limit != 500 {
+			t.Errorf("expected limit 500, got %d", body.Limit)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"jobId": "crawl-job-456",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Crawl(&CrawlBody{
+		Url:   "https://example.com",
+		Limit: 500,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCrawl_Unauthorized(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Crawl(&CrawlBody{Url: "https://example.com"})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != Unauthorized {
+		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
+	}
+}
+
+func TestCrawl_LimitExceeded(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusTooManyRequests, LimitExceeded, "Rate limit exceeded", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.Crawl(&CrawlBody{Url: "https://example.com"})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != LimitExceeded {
+		t.Errorf("expected error %q, got %q", LimitExceeded, errResp.ErrorIdentifier)
+	}
+}
+
+// =============================================================================
+// CrawlResult Method Tests
+// =============================================================================
+
+func TestCrawlResult_Scraping(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/web/crawl/job-123" {
+			t.Errorf("expected path /web/crawl/job-123, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodGet {
+			t.Errorf("expected method GET, got %s", r.Method)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "scraping",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.CrawlResult("job-123", 0)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != Scraping {
+		t.Errorf("expected status %q, got %q", Scraping, result.Status)
+	}
+}
+
+func TestCrawlResult_Completed(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "completed",
+			"pages": []map[string]any{
+				{
+					"url":             "https://example.com",
+					"content":         "# Home\n\nWelcome to example.",
+					"name":            "Home",
+					"description":     "Homepage",
+					"ogUrl":           "https://example.com/og.png",
+					"countCharacters": 25,
+				},
+				{
+					"url":             "https://example.com/about",
+					"content":         "# About\n\nAbout us.",
+					"name":            "About",
+					"description":     "About page",
+					"ogUrl":           "",
+					"countCharacters": 18,
+				},
+			},
+			"next": "https://api.supadata.ai/v1/web/crawl/job-123?skip=2",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.CrawlResult("job-123", 0)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != CrawlCompleted {
+		t.Errorf("expected status %q, got %q", CrawlCompleted, result.Status)
+	}
+	if len(result.Pages) != 2 {
+		t.Errorf("expected 2 pages, got %d", len(result.Pages))
+	}
+	if result.Pages[0].Url != "https://example.com" {
+		t.Errorf("expected first page url %q, got %q", "https://example.com", result.Pages[0].Url)
+	}
+	if result.Pages[0].Name != "Home" {
+		t.Errorf("expected first page name %q, got %q", "Home", result.Pages[0].Name)
+	}
+	if result.Next == "" {
+		t.Error("expected next pagination URL")
+	}
+}
+
+func TestCrawlResult_Failed(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "failed",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.CrawlResult("job-123", 0)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != CrawlFailed {
+		t.Errorf("expected status %q, got %q", CrawlFailed, result.Status)
+	}
+}
+
+func TestCrawlResult_Cancelled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "cancelled",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.CrawlResult("job-123", 0)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != Cancelled {
+		t.Errorf("expected status %q, got %q", Cancelled, result.Status)
+	}
+}
+
+func TestCrawlResult_WithSkip(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("skip"); got != "10" {
+			t.Errorf("expected skip=10, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "completed",
+			"pages":  []map[string]any{},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.CrawlResult("job-123", 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCrawlResult_Unauthorized(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.CrawlResult("job-123", 0)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errResp, ok := err.(*ErrorResponse)
+	if !ok {
+		t.Fatalf("expected *ErrorResponse, got %T", err)
+	}
+	if errResp.ErrorIdentifier != Unauthorized {
+		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
+	}
+}

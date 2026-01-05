@@ -31,10 +31,10 @@ OpenAPI specification: https://supadata.ai/api/v1/openapi.json
 | [Youtube Channel Videos](https://docs.supadata.ai/api-reference/endpoint/youtube/channel-videos)         | ❌         |
 | [Youtube Playlist Videos](https://docs.supadata.ai/api-reference/endpoint/youtube/playlist-videos)       | ❌         |
 | [Youtube Batch Result](https://docs.supadata.ai/api-reference/endpoint/youtube/batch-get)                | ❌         |
-| [Web Scrape](https://docs.supadata.ai/api-reference/endpoint/web/scrape)                                 | ❌         |
-| [Web Map](https://docs.supadata.ai/api-reference/endpoint/web/map)                                       | ❌         |
-| [Web Crawl](https://docs.supadata.ai/api-reference/endpoint/web/crawl)                                   | ❌         |
-| [Web Crawl Status](https://docs.supadata.ai/api-reference/endpoint/web/crawl-get)                        | ❌         |
+| [Web Scrape](https://docs.supadata.ai/api-reference/endpoint/web/scrape)                                 | ✅         |
+| [Web Map](https://docs.supadata.ai/api-reference/endpoint/web/map)                                       | ✅         |
+| [Web Crawl](https://docs.supadata.ai/api-reference/endpoint/web/crawl)                                   | ✅         |
+| [Web Crawl Status](https://docs.supadata.ai/api-reference/endpoint/web/crawl-get)                        | ✅         |
 | [Account Information](https://docs.supadata.ai/api-reference/endpoint/account/me)                        | ✅         |
 
 ## Installation

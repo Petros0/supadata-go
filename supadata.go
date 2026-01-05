@@ -1,6 +1,7 @@
 package supadata
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -151,12 +152,71 @@ type Metadata struct {
 	AdditionalData map[string]any `json:"additionalData,omitempty"`
 }
 
-// AccountInfo represents account information from the /me endpoint
 type AccountInfo struct {
 	OrganizationId string `json:"organizationId"`
 	Plan           string `json:"plan"`
 	MaxCredits     int    `json:"maxCredits"`
 	UsedCredits    int    `json:"usedCredits"`
+}
+
+type ScrapeParams struct {
+	Url     string
+	NoLinks bool
+	Lang    string
+}
+
+type ScrapeResult struct {
+	Url             string   `json:"url"`
+	Content         string   `json:"content"`
+	Name            string   `json:"name"`
+	Description     string   `json:"description"`
+	OgUrl           string   `json:"ogUrl"`
+	CountCharacters int      `json:"countCharacters"`
+	Urls            []string `json:"urls"`
+}
+
+type MapParams struct {
+	Url     string
+	NoLinks bool
+	Lang    string
+}
+
+type MapResult struct {
+	Urls []string `json:"urls"`
+}
+
+type CrawlBody struct {
+	Url   string `json:"url"`
+	Limit int    `json:"limit,omitempty"`
+}
+
+type CrawlJob struct {
+	JobId string `json:"jobId"`
+}
+
+// CrawlStatus represents the status of a crawl job
+type CrawlStatus string
+
+const (
+	Scraping       CrawlStatus = "scraping"
+	CrawlCompleted CrawlStatus = "completed"
+	CrawlFailed    CrawlStatus = "failed"
+	Cancelled      CrawlStatus = "cancelled"
+)
+
+type CrawlPage struct {
+	Url             string `json:"url"`
+	Content         string `json:"content"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	OgUrl           string `json:"ogUrl"`
+	CountCharacters int    `json:"countCharacters"`
+}
+
+type CrawlResult struct {
+	Status CrawlStatus `json:"status"`
+	Pages  []CrawlPage `json:"pages,omitempty"`
+	Next   string      `json:"next,omitempty"`
 }
 
 type Config struct {
@@ -370,4 +430,102 @@ func (s *Supadata) Me() (*AccountInfo, error) {
 	defer resp.Body.Close()
 
 	return handleResponse[AccountInfo](resp)
+}
+
+// Web Endpoints
+
+// Scrape extracts content from a webpage as markdown
+func (s *Supadata) Scrape(params *ScrapeParams) (*ScrapeResult, error) {
+	req, err := s.prepareRequest("GET", "/web/scrape", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("url", params.Url)
+	if params.NoLinks {
+		q.Set("noLinks", "true")
+	}
+	if params.Lang != "" {
+		q.Set("lang", params.Lang)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[ScrapeResult](resp)
+}
+
+// Map discovers all URLs on a website
+func (s *Supadata) Map(params *MapParams) (*MapResult, error) {
+	req, err := s.prepareRequest("GET", "/web/map", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("url", params.Url)
+	if params.NoLinks {
+		q.Set("noLinks", "true")
+	}
+	if params.Lang != "" {
+		q.Set("lang", params.Lang)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[MapResult](resp)
+}
+
+// Crawl initiates an async crawl job for a website
+func (s *Supadata) Crawl(params *CrawlBody) (*CrawlJob, error) {
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := s.prepareRequest("POST", "/web/crawl", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[CrawlJob](resp)
+}
+
+// CrawlResult retrieves the status and results of a crawl job
+func (s *Supadata) CrawlResult(jobId string, skip int) (*CrawlResult, error) {
+	req, err := s.prepareRequest("GET", "/web/crawl/"+jobId, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if skip > 0 {
+		q := req.URL.Query()
+		q.Set("skip", fmt.Sprintf("%d", skip))
+		req.URL.RawQuery = q.Encode()
+	}
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[CrawlResult](resp)
 }
