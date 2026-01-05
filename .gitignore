@@ -11,8 +11,7 @@
 *.dll
 *.so
 *.dylib
-main.go
-
+2
 # Test binary, built with `go test -c`
 *.test
 
