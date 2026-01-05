@@ -49,7 +49,7 @@ func (r *Transcript) IsAsync() bool {
 type TranscriptContent struct {
 	Text     string  `json:"text"`
 	Offset   float64 `json:"offset"`
-	Duration int     `json:"duration"`
+	Duration float64 `json:"duration"`
 	Lang     string  `json:"lang"`
 }
 
