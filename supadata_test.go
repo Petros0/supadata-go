@@ -297,176 +297,8 @@ func TestTranscript_AllModeParams(t *testing.T) {
 }
 
 // =============================================================================
-// Transcript Method Tests - Error Cases
+// Transcript Method Tests - Edge Cases
 // =============================================================================
-
-func TestTranscript_InvalidRequest(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusBadRequest, InvalidRequest, "Invalid URL format", "URL must be a valid video URL")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "invalid"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != InvalidRequest {
-		t.Errorf("expected error %q, got %q", InvalidRequest, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=123"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_Forbidden(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusForbidden, Forbidden, "Access denied", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=123"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Forbidden {
-		t.Errorf("expected error %q, got %q", Forbidden, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_NotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusNotFound, NotFound, "Video not found", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=notfound"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != NotFound {
-		t.Errorf("expected error %q, got %q", NotFound, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_TranscriptUnavailable(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusNotFound, TranscriptUnavailable, "No transcript available", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=123"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != TranscriptUnavailable {
-		t.Errorf("expected error %q, got %q", TranscriptUnavailable, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_LimitExceeded(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusTooManyRequests, LimitExceeded, "Rate limit exceeded", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=123"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != LimitExceeded {
-		t.Errorf("expected error %q, got %q", LimitExceeded, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_InternalError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusInternalServerError, InternalError, "Internal server error", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=123"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != InternalError {
-		t.Errorf("expected error %q, got %q", InternalError, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscript_UpgradeRequired(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusPaymentRequired, UpgradeRequired, "Plan upgrade required", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Transcript(&TranscriptParams{Url: "https://youtube.com/watch?v=123"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != UpgradeRequired {
-		t.Errorf("expected error %q, got %q", UpgradeRequired, errResp.ErrorIdentifier)
-	}
-}
 
 func TestTranscript_MalformedJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -604,48 +436,6 @@ func TestTranscriptResult_Failed(t *testing.T) {
 	}
 	if result.Error.ErrorIdentifier != TranscriptUnavailable {
 		t.Errorf("expected error identifier %q, got %q", TranscriptUnavailable, result.Error.ErrorIdentifier)
-	}
-}
-
-func TestTranscriptResult_NotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusNotFound, NotFound, "Job not found", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.TranscriptResult("invalid-job")
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != NotFound {
-		t.Errorf("expected error %q, got %q", NotFound, errResp.ErrorIdentifier)
-	}
-}
-
-func TestTranscriptResult_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.TranscriptResult("job-123")
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
 	}
 }
 
@@ -865,69 +655,6 @@ func TestMetadata_WithAdditionalData(t *testing.T) {
 	}
 }
 
-func TestMetadata_InvalidURL(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusBadRequest, InvalidRequest, "Invalid URL", "URL must be from a supported platform")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Metadata("invalid-url")
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != InvalidRequest {
-		t.Errorf("expected error %q, got %q", InvalidRequest, errResp.ErrorIdentifier)
-	}
-}
-
-func TestMetadata_NotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusNotFound, NotFound, "Content not found", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Metadata("https://youtube.com/watch?v=deleted")
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != NotFound {
-		t.Errorf("expected error %q, got %q", NotFound, errResp.ErrorIdentifier)
-	}
-}
-
-func TestMetadata_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Metadata("https://youtube.com/watch?v=123")
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
-	}
-}
-
 // =============================================================================
 // Error Response Tests
 // =============================================================================
@@ -976,6 +703,41 @@ func TestErrorResponse_AllIdentifiers(t *testing.T) {
 			}
 			if errResp.ErrorIdentifier != id {
 				t.Errorf("expected error %q, got %q", id, errResp.ErrorIdentifier)
+			}
+		})
+	}
+}
+
+func TestEndpoints_ErrorHandling(t *testing.T) {
+	endpoints := []struct {
+		name string
+		call func(*Supadata) error
+	}{
+		{"Transcript", func(c *Supadata) error { _, err := c.Transcript(&TranscriptParams{Url: "x"}); return err }},
+		{"TranscriptResult", func(c *Supadata) error { _, err := c.TranscriptResult("x"); return err }},
+		{"Metadata", func(c *Supadata) error { _, err := c.Metadata("x"); return err }},
+		{"Me", func(c *Supadata) error { _, err := c.Me(); return err }},
+		{"Scrape", func(c *Supadata) error { _, err := c.Scrape(&ScrapeParams{Url: "x"}); return err }},
+		{"Map", func(c *Supadata) error { _, err := c.Map(&MapParams{Url: "x"}); return err }},
+		{"Crawl", func(c *Supadata) error { _, err := c.Crawl(&CrawlBody{Url: "x"}); return err }},
+		{"CrawlResult", func(c *Supadata) error { _, err := c.CrawlResult("x", 0); return err }},
+	}
+
+	for _, ep := range endpoints {
+		t.Run(ep.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				errorResponse(w, http.StatusUnauthorized, Unauthorized, "Test error", "")
+			}))
+			defer server.Close()
+
+			client := newTestClient(server)
+			err := ep.call(client)
+
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if _, ok := err.(*ErrorResponse); !ok {
+				t.Fatalf("expected *ErrorResponse, got %T", err)
 			}
 		})
 	}
@@ -1079,48 +841,6 @@ func TestMe_Success(t *testing.T) {
 	}
 }
 
-func TestMe_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Me()
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
-	}
-}
-
-func TestMe_InternalError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusInternalServerError, InternalError, "Internal server error", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Me()
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != InternalError {
-		t.Errorf("expected error %q, got %q", InternalError, errResp.ErrorIdentifier)
-	}
-}
-
 // =============================================================================
 // Scrape Method Tests
 // =============================================================================
@@ -1202,48 +922,6 @@ func TestScrape_WithParams(t *testing.T) {
 	}
 }
 
-func TestScrape_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Scrape(&ScrapeParams{Url: "https://example.com"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
-	}
-}
-
-func TestScrape_NotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusNotFound, NotFound, "Page not found", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Scrape(&ScrapeParams{Url: "https://example.com/notfound"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != NotFound {
-		t.Errorf("expected error %q, got %q", NotFound, errResp.ErrorIdentifier)
-	}
-}
-
 // =============================================================================
 // Map Method Tests
 // =============================================================================
@@ -1306,27 +984,6 @@ func TestMap_WithParams(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestMap_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Map(&MapParams{Url: "https://example.com"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
 	}
 }
 
@@ -1395,48 +1052,6 @@ func TestCrawl_WithLimit(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestCrawl_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Crawl(&CrawlBody{Url: "https://example.com"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
-	}
-}
-
-func TestCrawl_LimitExceeded(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusTooManyRequests, LimitExceeded, "Rate limit exceeded", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.Crawl(&CrawlBody{Url: "https://example.com"})
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != LimitExceeded {
-		t.Errorf("expected error %q, got %q", LimitExceeded, errResp.ErrorIdentifier)
 	}
 }
 
@@ -1575,26 +1190,5 @@ func TestCrawlResult_WithSkip(t *testing.T) {
 	_, err := client.CrawlResult("job-123", 10)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestCrawlResult_Unauthorized(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errorResponse(w, http.StatusUnauthorized, Unauthorized, "Invalid API key", "")
-	}))
-	defer server.Close()
-
-	client := newTestClient(server)
-	_, err := client.CrawlResult("job-123", 0)
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	errResp, ok := err.(*ErrorResponse)
-	if !ok {
-		t.Fatalf("expected *ErrorResponse, got %T", err)
-	}
-	if errResp.ErrorIdentifier != Unauthorized {
-		t.Errorf("expected error %q, got %q", Unauthorized, errResp.ErrorIdentifier)
 	}
 }
