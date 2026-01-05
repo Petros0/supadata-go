@@ -1,6 +1,7 @@
 # supadata-go
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/petros0/supadata-go.svg)](https://pkg.go.dev/github.com/petros0/supadata-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/petros0/supadata-go)](https://goreportcard.com/report/github.com/petros0/supadata-go)
 [![CI](https://github.com/petros0/supadata-go/actions/workflows/ci.yml/badge.svg)](https://github.com/petros0/supadata-go/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -102,8 +103,8 @@ client := supadata.NewSupadata() // Will use SUPADATA_API_KEY env var
 
 ```go
 client := supadata.NewSupadata(
-WithAPIKey("sd_..."),
-WithTimeout(30*time.Second), // just override timeout of the client
+    WithAPIKey("sd_..."),
+    WithTimeout(30*time.Second), // just override timeout of the client
 )
 ```
 
@@ -113,13 +114,13 @@ You can provide a custom HTTP client for advanced use cases:
 
 ```go
 client := supadata.NewSupadata(
-WithAPIKey("sd_..."),
-WithClient(
-&http.Client{
-Timeout:   30 * time.Second,
-Transport: http.DefaultTransport,
-},
-),
+	WithAPIKey("sd_..."),
+	WithClient(
+		&http.Client{
+            Timeout:   30 * time.Second,
+            Transport: http.DefaultTransport,
+        },
+    ),
 )
 ```
 

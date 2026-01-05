@@ -152,8 +152,9 @@ type Metadata struct {
 }
 
 type Config struct {
-	apiKey string
-	client *http.Client
+	apiKey  string
+	baseURL string
+	client  *http.Client
 }
 
 type Supadata struct {
@@ -185,6 +186,12 @@ func WithClient(client *http.Client) ConfigOption {
 	}
 }
 
+func WithBaseURL(baseURL string) ConfigOption {
+	return func(config *Config) {
+		config.baseURL = baseURL
+	}
+}
+
 func NewSupadata(opts ...ConfigOption) *Supadata {
 	defaultClient := &http.Client{
 		Timeout:   60 * time.Second,
@@ -192,8 +199,9 @@ func NewSupadata(opts ...ConfigOption) *Supadata {
 	}
 
 	c := &Config{
-		apiKey: os.Getenv("SUPADATA_API_KEY"),
-		client: defaultClient,
+		apiKey:  os.Getenv("SUPADATA_API_KEY"),
+		baseURL: BaseUrl,
+		client:  defaultClient,
 	}
 
 	for _, opt := range opts {
@@ -207,7 +215,7 @@ func NewSupadata(opts ...ConfigOption) *Supadata {
 }
 
 func (s *Supadata) prepareRequest(method, endpoint string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, BaseUrl+endpoint, body)
+	req, err := http.NewRequest(method, s.config.baseURL+endpoint, body)
 	if err != nil {
 		return nil, err
 	}
