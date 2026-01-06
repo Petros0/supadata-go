@@ -219,6 +219,250 @@ type CrawlResult struct {
 	Next   string      `json:"next,omitempty"`
 }
 
+// YouTube Types
+
+// YouTubeSearchUploadDate filter for search results
+type YouTubeSearchUploadDate string
+
+const (
+	UploadDateAll   YouTubeSearchUploadDate = "all"
+	UploadDateHour  YouTubeSearchUploadDate = "hour"
+	UploadDateToday YouTubeSearchUploadDate = "today"
+	UploadDateWeek  YouTubeSearchUploadDate = "week"
+	UploadDateMonth YouTubeSearchUploadDate = "month"
+	UploadDateYear  YouTubeSearchUploadDate = "year"
+)
+
+// YouTubeSearchType filter for search results
+type YouTubeSearchType string
+
+const (
+	SearchTypeAll      YouTubeSearchType = "all"
+	SearchTypeVideo    YouTubeSearchType = "video"
+	SearchTypeChannel  YouTubeSearchType = "channel"
+	SearchTypePlaylist YouTubeSearchType = "playlist"
+	SearchTypeMovie    YouTubeSearchType = "movie"
+)
+
+// YouTubeSearchDuration filter for search results
+type YouTubeSearchDuration string
+
+const (
+	DurationAll    YouTubeSearchDuration = "all"
+	DurationShort  YouTubeSearchDuration = "short"
+	DurationMedium YouTubeSearchDuration = "medium"
+	DurationLong   YouTubeSearchDuration = "long"
+)
+
+// YouTubeSearchSortBy sort order for search results
+type YouTubeSearchSortBy string
+
+const (
+	SortByRelevance YouTubeSearchSortBy = "relevance"
+	SortByRating    YouTubeSearchSortBy = "rating"
+	SortByDate      YouTubeSearchSortBy = "date"
+	SortByViews     YouTubeSearchSortBy = "views"
+)
+
+// YouTubeSearchFeature special features filter
+type YouTubeSearchFeature string
+
+const (
+	FeatureHD             YouTubeSearchFeature = "hd"
+	FeatureSubtitles      YouTubeSearchFeature = "subtitles"
+	FeatureCreativeCommon YouTubeSearchFeature = "creative-commons"
+	Feature3D             YouTubeSearchFeature = "3d"
+	FeatureLive           YouTubeSearchFeature = "live"
+	Feature4K             YouTubeSearchFeature = "4k"
+	Feature360            YouTubeSearchFeature = "360"
+	FeatureLocation       YouTubeSearchFeature = "location"
+	FeatureHDR            YouTubeSearchFeature = "hdr"
+	FeatureVR180          YouTubeSearchFeature = "vr180"
+)
+
+type YouTubeSearchParams struct {
+	Query         string
+	UploadDate    YouTubeSearchUploadDate
+	Type          YouTubeSearchType
+	Duration      YouTubeSearchDuration
+	SortBy        YouTubeSearchSortBy
+	Features      []YouTubeSearchFeature
+	Limit         int
+	NextPageToken string
+}
+
+type YouTubeSearchResultItem struct {
+	Type            string `json:"type"`
+	Id              string `json:"id"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	Thumbnail       string `json:"thumbnail"`
+	Duration        int    `json:"duration,omitempty"`
+	ViewCount       *int   `json:"viewCount,omitempty"`
+	UploadDate      string `json:"uploadDate,omitempty"`
+	ChannelId       string `json:"channelId,omitempty"`
+	ChannelName     string `json:"channelName,omitempty"`
+	SubscriberCount *int   `json:"subscriberCount,omitempty"`
+	VideoCount      *int   `json:"videoCount,omitempty"`
+}
+
+type YouTubeSearchResult struct {
+	Query         string                    `json:"query"`
+	Results       []YouTubeSearchResultItem `json:"results"`
+	TotalResults  int                       `json:"totalResults"`
+	NextPageToken string                    `json:"nextPageToken,omitempty"`
+}
+
+type YouTubeVideoChannel struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type YouTubeVideo struct {
+	Id                  string              `json:"id"`
+	Title               string              `json:"title"`
+	Description         string              `json:"description"`
+	Duration            int                 `json:"duration"`
+	Channel             YouTubeVideoChannel `json:"channel"`
+	Tags                []string            `json:"tags"`
+	Thumbnail           string              `json:"thumbnail"`
+	UploadDate          *string             `json:"uploadDate"`
+	ViewCount           *int                `json:"viewCount"`
+	LikeCount           *int                `json:"likeCount"`
+	TranscriptLanguages []string            `json:"transcriptLanguages"`
+}
+
+type YouTubeVideoBatchParams struct {
+	VideoIds   []string `json:"videoIds,omitempty"`
+	PlaylistId string   `json:"playlistId,omitempty"`
+	ChannelId  string   `json:"channelId,omitempty"`
+	Limit      int      `json:"limit,omitempty"`
+}
+
+type YouTubeBatchJob struct {
+	JobId string `json:"jobId"`
+}
+
+type YouTubeTranscriptParams struct {
+	Url       string
+	VideoId   string
+	Text      bool
+	ChunkSize int
+	Lang      string
+}
+
+type YouTubeTranscriptResult struct {
+	Content        []TranscriptContent `json:"content"`
+	Lang           string              `json:"lang"`
+	AvailableLangs []string            `json:"availableLangs"`
+}
+
+type YouTubeTranscriptBatchParams struct {
+	VideoIds   []string `json:"videoIds,omitempty"`
+	PlaylistId string   `json:"playlistId,omitempty"`
+	ChannelId  string   `json:"channelId,omitempty"`
+	Limit      int      `json:"limit,omitempty"`
+	Lang       string   `json:"lang,omitempty"`
+	Text       bool     `json:"text,omitempty"`
+}
+
+type YouTubeTranscriptTranslateParams struct {
+	Url       string
+	VideoId   string
+	Text      bool
+	ChunkSize int
+	Lang      string
+}
+
+type YouTubeTranscriptTranslateResult struct {
+	Content []TranscriptContent `json:"content"`
+	Lang    string              `json:"lang"`
+}
+
+type YouTubeChannel struct {
+	Id              string `json:"id"`
+	Name            string `json:"name"`
+	Description     string `json:"description,omitempty"`
+	SubscriberCount *int   `json:"subscriberCount,omitempty"`
+	VideoCount      *int   `json:"videoCount,omitempty"`
+	ViewCount       *int   `json:"viewCount,omitempty"`
+	Thumbnail       string `json:"thumbnail,omitempty"`
+	Banner          string `json:"banner,omitempty"`
+}
+
+type YouTubePlaylist struct {
+	Id          string              `json:"id"`
+	Title       string              `json:"title"`
+	Description string              `json:"description,omitempty"`
+	VideoCount  int                 `json:"videoCount"`
+	ViewCount   *int                `json:"viewCount,omitempty"`
+	LastUpdated *string             `json:"lastUpdated,omitempty"`
+	Channel     YouTubeVideoChannel `json:"channel"`
+}
+
+// YouTubeChannelVideoType filter for channel videos
+type YouTubeChannelVideoType string
+
+const (
+	ChannelVideoTypeAll   YouTubeChannelVideoType = "all"
+	ChannelVideoTypeVideo YouTubeChannelVideoType = "video"
+	ChannelVideoTypeShort YouTubeChannelVideoType = "short"
+	ChannelVideoTypeLive  YouTubeChannelVideoType = "live"
+)
+
+type YouTubeChannelVideosParams struct {
+	Id    string
+	Limit int
+	Type  YouTubeChannelVideoType
+}
+
+type YouTubeChannelVideosResult struct {
+	VideoIds []string `json:"videoIds"`
+	ShortIds []string `json:"shortIds"`
+	LiveIds  []string `json:"liveIds"`
+}
+
+type YouTubePlaylistVideosParams struct {
+	Id    string
+	Limit int
+}
+
+type YouTubePlaylistVideosResult struct {
+	VideoIds []string `json:"videoIds"`
+	ShortIds []string `json:"shortIds"`
+	LiveIds  []string `json:"liveIds"`
+}
+
+// YouTubeBatchStatus represents the status of a batch job
+type YouTubeBatchStatus string
+
+const (
+	BatchQueued    YouTubeBatchStatus = "queued"
+	BatchActive    YouTubeBatchStatus = "active"
+	BatchCompleted YouTubeBatchStatus = "completed"
+	BatchFailed    YouTubeBatchStatus = "failed"
+)
+
+type YouTubeBatchResultItem struct {
+	VideoId    string                   `json:"videoId"`
+	Transcript *YouTubeTranscriptResult `json:"transcript,omitempty"`
+	Video      *YouTubeVideo            `json:"video,omitempty"`
+	ErrorCode  string                   `json:"errorCode,omitempty"`
+}
+
+type YouTubeBatchStats struct {
+	Total     int `json:"total"`
+	Succeeded int `json:"succeeded"`
+	Failed    int `json:"failed"`
+}
+
+type YouTubeBatchResult struct {
+	Status      YouTubeBatchStatus       `json:"status"`
+	Results     []YouTubeBatchResultItem `json:"results,omitempty"`
+	Stats       YouTubeBatchStats        `json:"stats"`
+	CompletedAt *string                  `json:"completedAt,omitempty"`
+}
+
 type Config struct {
 	apiKey  string
 	baseURL string
@@ -528,4 +772,284 @@ func (s *Supadata) CrawlResult(jobId string, skip int) (*CrawlResult, error) {
 	defer resp.Body.Close()
 
 	return handleResponse[CrawlResult](resp)
+}
+
+// YouTube Endpoints
+
+// YouTubeSearch searches YouTube for videos, channels, or playlists
+func (s *Supadata) YouTubeSearch(params *YouTubeSearchParams) (*YouTubeSearchResult, error) {
+	req, err := s.prepareRequest("GET", "/youtube/search", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("query", params.Query)
+	if params.UploadDate != "" {
+		q.Set("uploadDate", string(params.UploadDate))
+	}
+	if params.Type != "" {
+		q.Set("type", string(params.Type))
+	}
+	if params.Duration != "" {
+		q.Set("duration", string(params.Duration))
+	}
+	if params.SortBy != "" {
+		q.Set("sortBy", string(params.SortBy))
+	}
+	if len(params.Features) > 0 {
+		for _, f := range params.Features {
+			q.Add("features", string(f))
+		}
+	}
+	if params.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", params.Limit))
+	}
+	if params.NextPageToken != "" {
+		q.Set("nextPageToken", params.NextPageToken)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeSearchResult](resp)
+}
+
+// YouTubeVideo retrieves metadata for a YouTube video
+func (s *Supadata) YouTubeVideo(id string) (*YouTubeVideo, error) {
+	req, err := s.prepareRequest("GET", "/youtube/video", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", id)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeVideo](resp)
+}
+
+// YouTubeVideoBatch initiates a batch job to retrieve multiple video metadata
+func (s *Supadata) YouTubeVideoBatch(params *YouTubeVideoBatchParams) (*YouTubeBatchJob, error) {
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := s.prepareRequest("POST", "/youtube/video/batch", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeBatchJob](resp)
+}
+
+// YouTubeTranscript retrieves the transcript for a YouTube video
+func (s *Supadata) YouTubeTranscript(params *YouTubeTranscriptParams) (*YouTubeTranscriptResult, error) {
+	req, err := s.prepareRequest("GET", "/youtube/transcript", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	if params.Url != "" {
+		q.Set("url", params.Url)
+	}
+	if params.VideoId != "" {
+		q.Set("videoId", params.VideoId)
+	}
+	if params.Text {
+		q.Set("text", "true")
+	}
+	if params.ChunkSize > 0 {
+		q.Set("chunkSize", fmt.Sprintf("%d", params.ChunkSize))
+	}
+	if params.Lang != "" {
+		q.Set("lang", params.Lang)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeTranscriptResult](resp)
+}
+
+// YouTubeTranscriptBatch initiates a batch job to retrieve transcripts for multiple videos
+func (s *Supadata) YouTubeTranscriptBatch(params *YouTubeTranscriptBatchParams) (*YouTubeBatchJob, error) {
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := s.prepareRequest("POST", "/youtube/transcript/batch", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeBatchJob](resp)
+}
+
+// YouTubeTranscriptTranslate retrieves a translated transcript for a YouTube video
+func (s *Supadata) YouTubeTranscriptTranslate(params *YouTubeTranscriptTranslateParams) (*YouTubeTranscriptTranslateResult, error) {
+	req, err := s.prepareRequest("GET", "/youtube/transcript/translate", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	if params.Url != "" {
+		q.Set("url", params.Url)
+	}
+	if params.VideoId != "" {
+		q.Set("videoId", params.VideoId)
+	}
+	if params.Text {
+		q.Set("text", "true")
+	}
+	if params.ChunkSize > 0 {
+		q.Set("chunkSize", fmt.Sprintf("%d", params.ChunkSize))
+	}
+	q.Set("lang", params.Lang)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeTranscriptTranslateResult](resp)
+}
+
+// YouTubeChannel retrieves metadata for a YouTube channel
+func (s *Supadata) YouTubeChannel(id string) (*YouTubeChannel, error) {
+	req, err := s.prepareRequest("GET", "/youtube/channel", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", id)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeChannel](resp)
+}
+
+// YouTubePlaylist retrieves metadata for a YouTube playlist
+func (s *Supadata) YouTubePlaylist(id string) (*YouTubePlaylist, error) {
+	req, err := s.prepareRequest("GET", "/youtube/playlist", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", id)
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubePlaylist](resp)
+}
+
+// YouTubeChannelVideos retrieves video IDs from a YouTube channel
+func (s *Supadata) YouTubeChannelVideos(params *YouTubeChannelVideosParams) (*YouTubeChannelVideosResult, error) {
+	req, err := s.prepareRequest("GET", "/youtube/channel/videos", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", params.Id)
+	if params.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", params.Limit))
+	}
+	if params.Type != "" {
+		q.Set("type", string(params.Type))
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeChannelVideosResult](resp)
+}
+
+// YouTubePlaylistVideos retrieves video IDs from a YouTube playlist
+func (s *Supadata) YouTubePlaylistVideos(params *YouTubePlaylistVideosParams) (*YouTubePlaylistVideosResult, error) {
+	req, err := s.prepareRequest("GET", "/youtube/playlist/videos", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Set("id", params.Id)
+	if params.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", params.Limit))
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubePlaylistVideosResult](resp)
+}
+
+// YouTubeBatchResult retrieves the status and results of a batch job
+func (s *Supadata) YouTubeBatchResult(jobId string) (*YouTubeBatchResult, error) {
+	req, err := s.prepareRequest("GET", "/youtube/batch/"+jobId, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.config.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return handleResponse[YouTubeBatchResult](resp)
 }

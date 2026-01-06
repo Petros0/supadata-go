@@ -721,6 +721,35 @@ func TestEndpoints_ErrorHandling(t *testing.T) {
 		{"Map", func(c *Supadata) error { _, err := c.Map(&MapParams{Url: "x"}); return err }},
 		{"Crawl", func(c *Supadata) error { _, err := c.Crawl(&CrawlBody{Url: "x"}); return err }},
 		{"CrawlResult", func(c *Supadata) error { _, err := c.CrawlResult("x", 0); return err }},
+		{"YouTubeSearch", func(c *Supadata) error { _, err := c.YouTubeSearch(&YouTubeSearchParams{Query: "x"}); return err }},
+		{"YouTubeVideo", func(c *Supadata) error { _, err := c.YouTubeVideo("x"); return err }},
+		{"YouTubeVideoBatch", func(c *Supadata) error {
+			_, err := c.YouTubeVideoBatch(&YouTubeVideoBatchParams{VideoIds: []string{"x"}})
+			return err
+		}},
+		{"YouTubeTranscript", func(c *Supadata) error {
+			_, err := c.YouTubeTranscript(&YouTubeTranscriptParams{VideoId: "x"})
+			return err
+		}},
+		{"YouTubeTranscriptBatch", func(c *Supadata) error {
+			_, err := c.YouTubeTranscriptBatch(&YouTubeTranscriptBatchParams{VideoIds: []string{"x"}})
+			return err
+		}},
+		{"YouTubeTranscriptTranslate", func(c *Supadata) error {
+			_, err := c.YouTubeTranscriptTranslate(&YouTubeTranscriptTranslateParams{VideoId: "x", Lang: "en"})
+			return err
+		}},
+		{"YouTubeChannel", func(c *Supadata) error { _, err := c.YouTubeChannel("x"); return err }},
+		{"YouTubePlaylist", func(c *Supadata) error { _, err := c.YouTubePlaylist("x"); return err }},
+		{"YouTubeChannelVideos", func(c *Supadata) error {
+			_, err := c.YouTubeChannelVideos(&YouTubeChannelVideosParams{Id: "x"})
+			return err
+		}},
+		{"YouTubePlaylistVideos", func(c *Supadata) error {
+			_, err := c.YouTubePlaylistVideos(&YouTubePlaylistVideosParams{Id: "x"})
+			return err
+		}},
+		{"YouTubeBatchResult", func(c *Supadata) error { _, err := c.YouTubeBatchResult("x"); return err }},
 	}
 
 	for _, ep := range endpoints {
@@ -1190,5 +1219,637 @@ func TestCrawlResult_WithSkip(t *testing.T) {
 	_, err := client.CrawlResult("job-123", 10)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// =============================================================================
+// YouTube Search Tests
+// =============================================================================
+
+func TestYouTubeSearch_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/search" {
+			t.Errorf("expected path /youtube/search, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodGet {
+			t.Errorf("expected method GET, got %s", r.Method)
+		}
+		if got := r.URL.Query().Get("query"); got != "golang tutorial" {
+			t.Errorf("expected query param, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"query": "golang tutorial",
+			"results": []map[string]any{
+				{
+					"type":        "video",
+					"id":          "video123",
+					"title":       "Go Tutorial",
+					"description": "Learn Go programming",
+					"thumbnail":   "https://example.com/thumb.jpg",
+					"duration":    600,
+					"viewCount":   10000,
+					"channelId":   "channel123",
+					"channelName": "GoChannel",
+				},
+			},
+			"totalResults":  100,
+			"nextPageToken": "token123",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeSearch(&YouTubeSearchParams{Query: "golang tutorial"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Query != "golang tutorial" {
+		t.Errorf("expected query %q, got %q", "golang tutorial", result.Query)
+	}
+	if len(result.Results) != 1 {
+		t.Errorf("expected 1 result, got %d", len(result.Results))
+	}
+	if result.Results[0].Title != "Go Tutorial" {
+		t.Errorf("expected title %q, got %q", "Go Tutorial", result.Results[0].Title)
+	}
+	if result.NextPageToken != "token123" {
+		t.Errorf("expected nextPageToken %q, got %q", "token123", result.NextPageToken)
+	}
+}
+
+func TestYouTubeSearch_WithParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if got := q.Get("uploadDate"); got != "week" {
+			t.Errorf("expected uploadDate=week, got %q", got)
+		}
+		if got := q.Get("type"); got != "video" {
+			t.Errorf("expected type=video, got %q", got)
+		}
+		if got := q.Get("duration"); got != "medium" {
+			t.Errorf("expected duration=medium, got %q", got)
+		}
+		if got := q.Get("sortBy"); got != "views" {
+			t.Errorf("expected sortBy=views, got %q", got)
+		}
+		if got := q.Get("limit"); got != "50" {
+			t.Errorf("expected limit=50, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"query":        "test",
+			"results":      []map[string]any{},
+			"totalResults": 0,
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.YouTubeSearch(&YouTubeSearchParams{
+		Query:      "test",
+		UploadDate: UploadDateWeek,
+		Type:       SearchTypeVideo,
+		Duration:   DurationMedium,
+		SortBy:     SortByViews,
+		Limit:      50,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// =============================================================================
+// YouTube Video Tests
+// =============================================================================
+
+func TestYouTubeVideo_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/video" {
+			t.Errorf("expected path /youtube/video, got %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "dQw4w9WgXcQ" {
+			t.Errorf("expected id param, got %q", got)
+		}
+
+		uploadDate := "2009-10-25T00:00:00Z"
+		viewCount := 1500000000
+		likeCount := 15000000
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"id":          "dQw4w9WgXcQ",
+			"title":       "Rick Astley - Never Gonna Give You Up",
+			"description": "Official music video",
+			"duration":    213,
+			"channel": map[string]any{
+				"id":   "UCuAXFkgsw1L7xaCfnd5JJOw",
+				"name": "Rick Astley",
+			},
+			"tags":                []string{"rick astley", "music"},
+			"thumbnail":           "https://example.com/thumb.jpg",
+			"uploadDate":          uploadDate,
+			"viewCount":           viewCount,
+			"likeCount":           likeCount,
+			"transcriptLanguages": []string{"en", "es", "fr"},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeVideo("dQw4w9WgXcQ")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Id != "dQw4w9WgXcQ" {
+		t.Errorf("expected id %q, got %q", "dQw4w9WgXcQ", result.Id)
+	}
+	if result.Title != "Rick Astley - Never Gonna Give You Up" {
+		t.Errorf("expected title, got %q", result.Title)
+	}
+	if result.Duration != 213 {
+		t.Errorf("expected duration 213, got %d", result.Duration)
+	}
+	if result.Channel.Name != "Rick Astley" {
+		t.Errorf("expected channel name %q, got %q", "Rick Astley", result.Channel.Name)
+	}
+	if len(result.TranscriptLanguages) != 3 {
+		t.Errorf("expected 3 transcript languages, got %d", len(result.TranscriptLanguages))
+	}
+}
+
+// =============================================================================
+// YouTube Video Batch Tests
+// =============================================================================
+
+func TestYouTubeVideoBatch_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/video/batch" {
+			t.Errorf("expected path /youtube/video/batch, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("expected method POST, got %s", r.Method)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"jobId": "batch-job-123",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeVideoBatch(&YouTubeVideoBatchParams{
+		VideoIds: []string{"video1", "video2"},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.JobId != "batch-job-123" {
+		t.Errorf("expected jobId %q, got %q", "batch-job-123", result.JobId)
+	}
+}
+
+// =============================================================================
+// YouTube Transcript Tests
+// =============================================================================
+
+func TestYouTubeTranscript_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/transcript" {
+			t.Errorf("expected path /youtube/transcript, got %s", r.URL.Path)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"content": []map[string]any{
+				{"text": "Hello world", "offset": 0.0, "duration": 1.5},
+				{"text": "How are you", "offset": 1.5, "duration": 2.0},
+			},
+			"lang":           "en",
+			"availableLangs": []string{"en", "es"},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeTranscript(&YouTubeTranscriptParams{VideoId: "video123"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Content) != 2 {
+		t.Errorf("expected 2 content items, got %d", len(result.Content))
+	}
+	if result.Lang != "en" {
+		t.Errorf("expected lang %q, got %q", "en", result.Lang)
+	}
+}
+
+func TestYouTubeTranscript_WithParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if got := q.Get("url"); got != "https://youtube.com/watch?v=123" {
+			t.Errorf("expected url param, got %q", got)
+		}
+		if got := q.Get("lang"); got != "es" {
+			t.Errorf("expected lang=es, got %q", got)
+		}
+		if got := q.Get("text"); got != "true" {
+			t.Errorf("expected text=true, got %q", got)
+		}
+		if got := q.Get("chunkSize"); got != "500" {
+			t.Errorf("expected chunkSize=500, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"content":        []map[string]any{},
+			"lang":           "es",
+			"availableLangs": []string{"es"},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.YouTubeTranscript(&YouTubeTranscriptParams{
+		Url:       "https://youtube.com/watch?v=123",
+		Lang:      "es",
+		Text:      true,
+		ChunkSize: 500,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// =============================================================================
+// YouTube Transcript Batch Tests
+// =============================================================================
+
+func TestYouTubeTranscriptBatch_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/transcript/batch" {
+			t.Errorf("expected path /youtube/transcript/batch, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("expected method POST, got %s", r.Method)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"jobId": "transcript-batch-123",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeTranscriptBatch(&YouTubeTranscriptBatchParams{
+		PlaylistId: "PLxyz123",
+		Lang:       "en",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.JobId != "transcript-batch-123" {
+		t.Errorf("expected jobId %q, got %q", "transcript-batch-123", result.JobId)
+	}
+}
+
+// =============================================================================
+// YouTube Transcript Translate Tests
+// =============================================================================
+
+func TestYouTubeTranscriptTranslate_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/transcript/translate" {
+			t.Errorf("expected path /youtube/transcript/translate, got %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("lang"); got != "fr" {
+			t.Errorf("expected lang=fr, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"content": []map[string]any{
+				{"text": "Bonjour le monde", "offset": 0.0, "duration": 1.5},
+			},
+			"lang": "fr",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeTranscriptTranslate(&YouTubeTranscriptTranslateParams{
+		VideoId: "video123",
+		Lang:    "fr",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Lang != "fr" {
+		t.Errorf("expected lang %q, got %q", "fr", result.Lang)
+	}
+	if len(result.Content) != 1 {
+		t.Errorf("expected 1 content item, got %d", len(result.Content))
+	}
+}
+
+// =============================================================================
+// YouTube Channel Tests
+// =============================================================================
+
+func TestYouTubeChannel_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/channel" {
+			t.Errorf("expected path /youtube/channel, got %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "@GoogleDevelopers" {
+			t.Errorf("expected id param, got %q", got)
+		}
+
+		subscriberCount := 2500000
+		videoCount := 5000
+		viewCount := 500000000
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"id":              "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+			"name":            "Google Developers",
+			"description":     "The Google Developers channel",
+			"subscriberCount": subscriberCount,
+			"videoCount":      videoCount,
+			"viewCount":       viewCount,
+			"thumbnail":       "https://example.com/thumb.jpg",
+			"banner":          "https://example.com/banner.jpg",
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeChannel("@GoogleDevelopers")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Name != "Google Developers" {
+		t.Errorf("expected name %q, got %q", "Google Developers", result.Name)
+	}
+	if result.SubscriberCount == nil || *result.SubscriberCount != 2500000 {
+		t.Errorf("expected subscriberCount 2500000, got %v", result.SubscriberCount)
+	}
+}
+
+// =============================================================================
+// YouTube Playlist Tests
+// =============================================================================
+
+func TestYouTubePlaylist_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/playlist" {
+			t.Errorf("expected path /youtube/playlist, got %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "PLxyz123" {
+			t.Errorf("expected id param, got %q", got)
+		}
+
+		viewCount := 100000
+		lastUpdated := "2024-01-15T10:30:00Z"
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"id":          "PLxyz123",
+			"title":       "Go Tutorials",
+			"description": "Learn Go programming",
+			"videoCount":  50,
+			"viewCount":   viewCount,
+			"lastUpdated": lastUpdated,
+			"channel": map[string]any{
+				"id":   "channel123",
+				"name": "GoChannel",
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubePlaylist("PLxyz123")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Title != "Go Tutorials" {
+		t.Errorf("expected title %q, got %q", "Go Tutorials", result.Title)
+	}
+	if result.VideoCount != 50 {
+		t.Errorf("expected videoCount 50, got %d", result.VideoCount)
+	}
+	if result.Channel.Name != "GoChannel" {
+		t.Errorf("expected channel name %q, got %q", "GoChannel", result.Channel.Name)
+	}
+}
+
+// =============================================================================
+// YouTube Channel Videos Tests
+// =============================================================================
+
+func TestYouTubeChannelVideos_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/channel/videos" {
+			t.Errorf("expected path /youtube/channel/videos, got %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "channel123" {
+			t.Errorf("expected id param, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"videoIds": []string{"video1", "video2", "video3"},
+			"shortIds": []string{"short1", "short2"},
+			"liveIds":  []string{"live1"},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeChannelVideos(&YouTubeChannelVideosParams{Id: "channel123"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.VideoIds) != 3 {
+		t.Errorf("expected 3 videoIds, got %d", len(result.VideoIds))
+	}
+	if len(result.ShortIds) != 2 {
+		t.Errorf("expected 2 shortIds, got %d", len(result.ShortIds))
+	}
+	if len(result.LiveIds) != 1 {
+		t.Errorf("expected 1 liveId, got %d", len(result.LiveIds))
+	}
+}
+
+func TestYouTubeChannelVideos_WithParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if got := q.Get("limit"); got != "100" {
+			t.Errorf("expected limit=100, got %q", got)
+		}
+		if got := q.Get("type"); got != "short" {
+			t.Errorf("expected type=short, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"videoIds": []string{},
+			"shortIds": []string{"short1"},
+			"liveIds":  []string{},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.YouTubeChannelVideos(&YouTubeChannelVideosParams{
+		Id:    "channel123",
+		Limit: 100,
+		Type:  ChannelVideoTypeShort,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// =============================================================================
+// YouTube Playlist Videos Tests
+// =============================================================================
+
+func TestYouTubePlaylistVideos_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/playlist/videos" {
+			t.Errorf("expected path /youtube/playlist/videos, got %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "PLxyz123" {
+			t.Errorf("expected id param, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"videoIds": []string{"video1", "video2"},
+			"shortIds": []string{},
+			"liveIds":  []string{},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubePlaylistVideos(&YouTubePlaylistVideosParams{Id: "PLxyz123"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.VideoIds) != 2 {
+		t.Errorf("expected 2 videoIds, got %d", len(result.VideoIds))
+	}
+}
+
+func TestYouTubePlaylistVideos_WithLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("limit"); got != "500" {
+			t.Errorf("expected limit=500, got %q", got)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"videoIds": []string{},
+			"shortIds": []string{},
+			"liveIds":  []string{},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	_, err := client.YouTubePlaylistVideos(&YouTubePlaylistVideosParams{
+		Id:    "PLxyz123",
+		Limit: 500,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// =============================================================================
+// YouTube Batch Result Tests
+// =============================================================================
+
+func TestYouTubeBatchResult_Queued(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/youtube/batch/job-123" {
+			t.Errorf("expected path /youtube/batch/job-123, got %s", r.URL.Path)
+		}
+
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "queued",
+			"stats": map[string]any{
+				"total":     10,
+				"succeeded": 0,
+				"failed":    0,
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeBatchResult("job-123")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != BatchQueued {
+		t.Errorf("expected status %q, got %q", BatchQueued, result.Status)
+	}
+}
+
+func TestYouTubeBatchResult_Completed(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		completedAt := "2024-01-15T10:30:00Z"
+		jsonResponse(w, http.StatusOK, map[string]any{
+			"status": "completed",
+			"results": []map[string]any{
+				{
+					"videoId": "video1",
+					"video": map[string]any{
+						"id":       "video1",
+						"title":    "Test Video",
+						"duration": 120,
+						"channel":  map[string]any{"id": "ch1", "name": "Channel"},
+					},
+				},
+				{
+					"videoId":   "video2",
+					"errorCode": "not-found",
+				},
+			},
+			"stats": map[string]any{
+				"total":     2,
+				"succeeded": 1,
+				"failed":    1,
+			},
+			"completedAt": completedAt,
+		})
+	}))
+	defer server.Close()
+
+	client := newTestClient(server)
+	result, err := client.YouTubeBatchResult("job-123")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Status != BatchCompleted {
+		t.Errorf("expected status %q, got %q", BatchCompleted, result.Status)
+	}
+	if len(result.Results) != 2 {
+		t.Errorf("expected 2 results, got %d", len(result.Results))
+	}
+	if result.Results[0].Video == nil {
+		t.Error("expected video in first result")
+	}
+	if result.Results[1].ErrorCode != "not-found" {
+		t.Errorf("expected errorCode %q, got %q", "not-found", result.Results[1].ErrorCode)
+	}
+	if result.Stats.Succeeded != 1 {
+		t.Errorf("expected succeeded 1, got %d", result.Stats.Succeeded)
 	}
 }

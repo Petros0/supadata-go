@@ -19,18 +19,17 @@ OpenAPI specification: https://supadata.ai/api/v1/openapi.json
 | [Universal Transcript](https://docs.supadata.ai/api-reference/endpoint/transcript/transcript)            | ✅         |
 | [Universal Transcript Result](https://docs.supadata.ai/api-reference/endpoint/transcript/transcript-get) | ✅         |
 | [Universal Metadata](https://docs.supadata.ai/api-reference/endpoint/metadata/metadata)                  | ✅         |
-| [Youtube Search](https://docs.supadata.ai/api-reference/endpoint/youtube/search)                         | ❌         |
-| [Youtube Video](https://docs.supadata.ai/api-reference/endpoint/youtube/video-get)                       | ❌         |
-| [Youtube Video Batch](https://docs.supadata.ai/api-reference/endpoint/youtube/video-batch)               | ❌         |
-| [Youtube Transcript](https://docs.supadata.ai/api-reference/endpoint/youtube/transcript)                 | ❌         |
-| [Youtube Transcript](https://docs.supadata.ai/api-reference/endpoint/youtube/transcript)                 | ❌         |
-| [Youtube Transcript Batch](https://docs.supadata.ai/api-reference/endpoint/youtube/transcript-batch)     | ❌         |
-| [Youtube Transcript Translate](https://docs.supadata.ai/api-reference/endpoint/youtube/translation)      | ❌         |
-| [Youtube Channel](https://docs.supadata.ai/api-reference/endpoint/youtube/channel)                       | ❌         |
-| [Youtube Playlist](https://docs.supadata.ai/api-reference/endpoint/youtube/playlist)                     | ❌         |
-| [Youtube Channel Videos](https://docs.supadata.ai/api-reference/endpoint/youtube/channel-videos)         | ❌         |
-| [Youtube Playlist Videos](https://docs.supadata.ai/api-reference/endpoint/youtube/playlist-videos)       | ❌         |
-| [Youtube Batch Result](https://docs.supadata.ai/api-reference/endpoint/youtube/batch-get)                | ❌         |
+| [Youtube Search](https://docs.supadata.ai/api-reference/endpoint/youtube/search)                         | ✅         |
+| [Youtube Video](https://docs.supadata.ai/api-reference/endpoint/youtube/video-get)                       | ✅         |
+| [Youtube Video Batch](https://docs.supadata.ai/api-reference/endpoint/youtube/video-batch)               | ✅         |
+| [Youtube Transcript](https://docs.supadata.ai/api-reference/endpoint/youtube/transcript)                 | ✅         |
+| [Youtube Transcript Batch](https://docs.supadata.ai/api-reference/endpoint/youtube/transcript-batch)     | ✅         |
+| [Youtube Transcript Translate](https://docs.supadata.ai/api-reference/endpoint/youtube/translation)      | ✅         |
+| [Youtube Channel](https://docs.supadata.ai/api-reference/endpoint/youtube/channel)                       | ✅         |
+| [Youtube Playlist](https://docs.supadata.ai/api-reference/endpoint/youtube/playlist)                     | ✅         |
+| [Youtube Channel Videos](https://docs.supadata.ai/api-reference/endpoint/youtube/channel-videos)         | ✅         |
+| [Youtube Playlist Videos](https://docs.supadata.ai/api-reference/endpoint/youtube/playlist-videos)       | ✅         |
+| [Youtube Batch Result](https://docs.supadata.ai/api-reference/endpoint/youtube/batch-get)                | ✅         |
 | [Web Scrape](https://docs.supadata.ai/api-reference/endpoint/web/scrape)                                 | ✅         |
 | [Web Map](https://docs.supadata.ai/api-reference/endpoint/web/map)                                       | ✅         |
 | [Web Crawl](https://docs.supadata.ai/api-reference/endpoint/web/crawl)                                   | ✅         |
@@ -81,6 +80,16 @@ environment, run:
 
 ```bash
 asdf install
+```
+
+## Examples
+
+See the [example](./example) folder for more usage examples. 
+
+To run the examples, set your API key as an environment variable and execute the main file:
+```bash
+export SUPADATA_API_KEY=your_api_key
+go run ./example
 ```
 
 ## Configuration
